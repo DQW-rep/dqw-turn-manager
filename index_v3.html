@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DQW攻略ノート v3</title>
+<style>
+body{font-family:sans-serif;margin:12px}
+input,select,textarea,button{font-size:16px;box-sizing:border-box}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ccc;padding:6px}
+input.cell{width:100%;min-height:44px}
+select{width:100%}
+button{padding:8px 12px;margin:4px}
+</style>
+</head>
+<body>
+<h2>DQW攻略ノート v3</h2>
+
+<p>ボス名</p>
+<input id="boss">
+
+<p>攻略メモ</p>
+<textarea id="memo" rows="3"></textarea>
+
+<h3>パーティ</h3>
+<table>
+<tr>
+<td><select id="job1"></select></td>
+<td><select id="job2"></select></td>
+<td><select id="job3"></select></td>
+<td><select id="job4"></select></td>
+</tr>
+</table>
+
+<p>
+<button onclick="addTurn()">＋ターン追加</button>
+<button onclick="removeTurn()">－最後のターン削除</button>
+</p>
+
+<table id="tbl">
+<thead>
+<tr>
+<th>Turn</th>
+<th>敵行動</th>
+<th id="h1">1人目</th>
+<th id="h2">2人目</th>
+<th id="h3">3人目</th>
+<th id="h4">4人目</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script>
+const jobs=[
+"守り人","ゴッドハンド","大神官","ニンジャ",
+"大魔道士","魔剣士","ドラゴン","天地雷鳴士",
+"魔人","時渡りの剣士"
+];
+
+function fillJobs(){
+ ["job1","job2","job3","job4"].forEach((id,i)=>{
+   const s=document.getElementById(id);
+   jobs.forEach(j=>{
+      const o=document.createElement("option");
+      o.value=j;o.textContent=j;
+      s.appendChild(o);
+   });
+   s.selectedIndex=i;
+   s.onchange=()=>{updateHeaders();save();};
+ });
+}
+
+let turnCount=0;
+
+function updateHeaders(){
+ h1.textContent=job1.value;
+ h2.textContent=job2.value;
+ h3.textContent=job3.value;
+ h4.textContent=job4.value;
+}
+
+function addTurn(data=[]){
+ turnCount++;
+ const tr=document.createElement("tr");
+ tr.innerHTML=`
+ <td>${turnCount}</td>
+ <td><input class="cell" value="${data[0]||''}"></td>
+ <td><input class="cell" value="${data[1]||''}"></td>
+ <td><input class="cell" value="${data[2]||''}"></td>
+ <td><input class="cell" value="${data[3]||''}"></td>
+ <td><input class="cell" value="${data[4]||''}"></td>`;
+ tbody.appendChild(tr);
+ bind();
+ save();
+}
+
+function removeTurn(){
+ if(turnCount===0)return;
+ tbody.removeChild(tbody.lastElementChild);
+ turnCount--;
+ save();
+}
+
+function bind(){
+ document.querySelectorAll('input,textarea').forEach(e=>e.oninput=save);
+}
+
+function save(){
+ const rows=[...tbody.rows].map(r=>
+ [...r.querySelectorAll('input')].map(i=>i.value)
+ );
+ localStorage.setItem('dqw_v3',JSON.stringify({
+  boss:boss.value,
+  memo:memo.value,
+  jobs:[job1.value,job2.value,job3.value,job4.value],
+  rows:rows
+ }));
+}
+
+function load(){
+ fillJobs();
+ const d=JSON.parse(localStorage.getItem('dqw_v3')||'null');
+ if(!d){
+   updateHeaders();
+   addTurn();
+   return;
+ }
+ boss.value=d.boss||'';
+ memo.value=d.memo||'';
+ [job1.value,job2.value,job3.value,job4.value]=d.jobs||jobs.slice(0,4);
+ updateHeaders();
+ (d.rows||[]).forEach(r=>addTurn(r));
+ if((d.rows||[]).length===0)addTurn();
+ bind();
+}
+load();
+</script>
+</body>
+</html>
